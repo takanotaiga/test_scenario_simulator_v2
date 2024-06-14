@@ -310,6 +310,7 @@ struct EllipseBasedNoiseApplicator : public DefaultNoiseApplicator
   {
     double x, y, angle;
     double dist_tp_rate, dist_distance_mean, dist_distance_std, dist_yaw_mean, dist_yaw_std;
+    double tp_rate, distance_mean, distance_std, yaw_mean, yaw_std;
 
     std::vector<bool> is_masked(detected_objects.objects.size(), false);
 
@@ -328,20 +329,18 @@ struct EllipseBasedNoiseApplicator : public DefaultNoiseApplicator
       dist_yaw_mean = calculateEllipseDistance(x, y, ellipse_normalized_x_radius_yaw_mean);
       dist_yaw_std = calculateEllipseDistance(x, y, ellipse_normalized_x_radius_yaw_std);
 
-      // find noise parameters
-      double tp_rate = findValue(ellipse_y_radius_values, tp_rate_values, dist_tp_rate);
-      double distance_mean = findValue(ellipse_y_radius_values, distance_mean_values, dist_distance_mean);
-      double distance_std = findValue(ellipse_y_radius_values, distance_std_values, dist_distance_std);
-      double yaw_mean = findValue(ellipse_y_radius_values, yaw_mean_values, dist_yaw_mean);
-      double yaw_std = findValue(ellipse_y_radius_values, yaw_std_values, dist_yaw_std);
-
+      // random mask
+      tp_rate = findValue(ellipse_y_radius_values, tp_rate_values, dist_tp_rate);
       is_masked[i] = std::uniform_real_distribution<double>()(random_engine) > tp_rate;
-
 
       // Apply noise
       if (is_masked[i])
         continue;
 
+      distance_mean = findValue(ellipse_y_radius_values, distance_mean_values, dist_distance_mean);
+      distance_std = findValue(ellipse_y_radius_values, distance_std_values, dist_distance_std);
+      yaw_mean = findValue(ellipse_y_radius_values, yaw_mean_values, dist_yaw_mean);
+      yaw_std = findValue(ellipse_y_radius_values, yaw_std_values, dist_yaw_std);
       double dis_offset = std::normal_distribution<double>(distance_mean, distance_std)(random_engine);
       pose.position.x += dis_offset * std::cos(angle);
       pose.position.y += dis_offset * std::sin(angle);
