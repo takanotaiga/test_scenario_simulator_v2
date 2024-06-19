@@ -47,7 +47,7 @@ RelativeDistanceCondition::RelativeDistanceCondition(
   }())
 {
   std::set<RoutingAlgorithm::value_type> supported = {
-    RoutingAlgorithm::value_type::shortest, RoutingAlgorithm::value_type::undefined};
+    RoutingAlgorithm::value_type::shortest};
   if (supported.find(routing_algorithm) == supported.end()) {
     throw UNSUPPORTED_ENUMERATION_VALUE_SPECIFIED(
       RelativeDistanceCondition, boost::lexical_cast<std::string>(routing_algorithm));
