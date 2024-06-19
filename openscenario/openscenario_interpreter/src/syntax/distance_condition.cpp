@@ -345,39 +345,75 @@ auto DistanceCondition::distance<
     overload(
       [&](const WorldPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .offset;
+          auto t = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .offset;
+          if (t < 0.) {
+            std::stringstream what;
+            what
+              << "DistanceCondition: longitudinal distance to the world position is negative. t = "
+              << t;
+            throw common::SemanticError(what.str());
+          } else {
+            return t;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const RelativeWorldPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .offset;
+          auto t = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .offset;
+          if (t < 0.) {
+            std::stringstream what;
+            what << "DistanceCondition: longitudinal distance to the relative world position is "
+                    "negative. t = "
+                 << t;
+            throw common::SemanticError(what.str());
+          } else {
+            return t;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const RelativeObjectPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return makeNativeRelativeLanePosition(
-                   triggering_entity, static_cast<NativeLanePosition>(position))
-            .offset;
+          auto t = makeNativeRelativeLanePosition(
+                     triggering_entity, static_cast<NativeLanePosition>(position))
+                     .offset;
+          if (t < 0.) {
+            std::stringstream what;
+            what << "DistanceCondition: longitudinal distance to the relative object position is "
+                    "negative. t = "
+                 << t;
+            throw common::SemanticError(what.str());
+          } else {
+            return t;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const LanePosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .offset;
+          auto t = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .offset;
+          if (t < 0.) {
+            std::stringstream what;
+            what
+              << "DistanceCondition: longitudinal distance to the lane position is negative. t = "
+              << t;
+            throw common::SemanticError(what.str());
+          } else {
+            return t;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
@@ -394,39 +430,75 @@ auto DistanceCondition::distance<
     overload(
       [&](const WorldPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeBoundingBoxRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .offset;
+          auto t = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeBoundingBoxRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .offset;
+          if (t < 0.) {
+            std::stringstream what;
+            what
+              << "DistanceCondition: longitudinal distance to the world position is negative. t = "
+              << t;
+            throw common::SemanticError(what.str());
+          } else {
+            return t;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const RelativeWorldPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeBoundingBoxRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .offset;
+          auto t = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeBoundingBoxRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .offset;
+          if (t < 0.) {
+            std::stringstream what;
+            what << "DistanceCondition: longitudinal distance to the relative world position is "
+                    "negative. t = "
+                 << t;
+            throw common::SemanticError(what.str());
+          } else {
+            return t;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const RelativeObjectPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return makeNativeBoundingBoxRelativeLanePosition(
-                   triggering_entity, static_cast<NativeLanePosition>(position))
-            .offset;
+          auto t = makeNativeBoundingBoxRelativeLanePosition(
+                     triggering_entity, static_cast<NativeLanePosition>(position))
+                     .offset;
+          if (t < 0.) {
+            std::stringstream what;
+            what << "DistanceCondition: longitudinal distance to the relative object position is "
+                    "negative. t = "
+                 << t;
+            throw common::SemanticError(what.str());
+          } else {
+            return t;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const LanePosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeBoundingBoxRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .offset;
+          auto t = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeBoundingBoxRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .offset;
+          if (t < 0.) {
+            std::stringstream what;
+            what
+              << "DistanceCondition: longitudinal distance to the lane position is negative. t = "
+              << t;
+            throw common::SemanticError(what.str());
+          } else {
+            return t;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
@@ -443,39 +515,75 @@ auto DistanceCondition::distance<
     overload(
       [&](const WorldPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .s;
+          auto s = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .s;
+          if (s < 0.) {
+            std::stringstream what;
+            what
+              << "DistanceCondition: longitudinal distance to the world position is negative. s = "
+              << s;
+            throw common::SemanticError(what.str());
+          } else {
+            return s;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const RelativeWorldPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .s;
+          auto s = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .s;
+          if (s < 0.) {
+            std::stringstream what;
+            what << "DistanceCondition: longitudinal distance to the relative world position is "
+                    "negative. s = "
+                 << s;
+            throw common::SemanticError(what.str());
+          } else {
+            return s;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const RelativeObjectPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return makeNativeRelativeLanePosition(
-                   triggering_entity, static_cast<NativeLanePosition>(position))
-            .s;
+          auto s = makeNativeRelativeLanePosition(
+                     triggering_entity, static_cast<NativeLanePosition>(position))
+                     .s;
+          if (s < 0.) {
+            std::stringstream what;
+            what << "DistanceCondition: longitudinal distance to the relative object position is "
+                    "negative. s = "
+                 << s;
+            throw common::SemanticError(what.str());
+          } else {
+            return s;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const LanePosition & position) {
         if (global().entities->ref(triggering_entity).template as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .s;
+          auto s = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .s;
+          if (s < 0.) {
+            std::stringstream what;
+            what
+              << "DistanceCondition: longitudinal distance to the lane position is negative. s = "
+              << s;
+            throw common::SemanticError(what.str());
+          } else {
+            return s;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
@@ -492,39 +600,75 @@ auto DistanceCondition::distance<
     overload(
       [&](const WorldPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeBoundingBoxRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .s;
+          auto s = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeBoundingBoxRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .s;
+          if (s < 0.) {
+            std::stringstream what;
+            what
+              << "DistanceCondition: longitudinal distance to the world position is negative. s = "
+              << s;
+            throw common::SemanticError(what.str());
+          } else {
+            return s;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const RelativeWorldPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeBoundingBoxRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .s;
+          auto s = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeBoundingBoxRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .s;
+          if (s < 0.) {
+            std::stringstream what;
+            what << "DistanceCondition: longitudinal distance to the relative world position is "
+                    "negative. s = "
+                 << s;
+            throw common::SemanticError(what.str());
+          } else {
+            return s;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const RelativeObjectPosition & position) {
         if (global().entities->ref(triggering_entity).as<ScenarioObject>().is_added) {
-          return makeNativeBoundingBoxRelativeLanePosition(
-                   triggering_entity, static_cast<NativeLanePosition>(position))
-            .s;
+          auto s = makeNativeBoundingBoxRelativeLanePosition(
+                     triggering_entity, static_cast<NativeLanePosition>(position))
+                     .s;
+          if (s < 0.) {
+            std::stringstream what;
+            what << "DistanceCondition: longitudinal distance to the relative object position is "
+                    "negative. s = "
+                 << s;
+            throw common::SemanticError(what.str());
+          } else {
+            return s;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
       },
       [&](const LanePosition & position) {
         if (global().entities->ref(triggering_entity).template as<ScenarioObject>().is_added) {
-          return static_cast<traffic_simulator::LaneletPose>(
-                   makeNativeBoundingBoxRelativeLanePosition(
-                     triggering_entity, static_cast<NativeLanePosition>(position)))
-            .s;
+          auto s = static_cast<traffic_simulator::LaneletPose>(
+                     makeNativeBoundingBoxRelativeLanePosition(
+                       triggering_entity, static_cast<NativeLanePosition>(position)))
+                     .s;
+          if (s < 0.) {
+            std::stringstream what;
+            what
+              << "DistanceCondition: longitudinal distance to the lane position is negative. s = "
+              << s;
+            throw common::SemanticError(what.str());
+          } else {
+            return s;
+          }
         } else {
           return std::numeric_limits<double>::quiet_NaN();
         }
