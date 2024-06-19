@@ -256,7 +256,7 @@ struct ExitFailure : public CustomCommand
 {
   using CustomCommand::CustomCommand;
 
-  auto start(const Scope &) -> void override { throw SpecialAction<EXIT_FAILURE>(); }
+  auto start(const Scope &) -> void override { throw SpecialAction<EXIT_SUCCESS>(); }
 };
 
 struct PrintParameter : public CustomCommand
