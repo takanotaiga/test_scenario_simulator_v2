@@ -18,6 +18,12 @@
 #include <lanelet2_projection/UTM.h>
 
 #include <algorithm>
+#include <autoware_lanelet2_extension/io/autoware_osm_parser.hpp>
+#include <autoware_lanelet2_extension/projection/mgrs_projector.hpp>
+#include <autoware_lanelet2_extension/utility/message_conversion.hpp>
+#include <autoware_lanelet2_extension/utility/query.hpp>
+#include <autoware_lanelet2_extension/utility/utilities.hpp>
+#include <autoware_lanelet2_extension/visualization/visualization.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/assign/list_of.hpp>
@@ -36,12 +42,6 @@
 #include <geometry/vector3/inner_product.hpp>
 #include <geometry/vector3/normalize.hpp>
 #include <geometry/vector3/operator.hpp>
-#include <lanelet2_extension/io/autoware_osm_parser.hpp>
-#include <lanelet2_extension/projection/mgrs_projector.hpp>
-#include <lanelet2_extension/utility/message_conversion.hpp>
-#include <lanelet2_extension/utility/query.hpp>
-#include <lanelet2_extension/utility/utilities.hpp>
-#include <lanelet2_extension/visualization/visualization.hpp>
 #include <memory>
 #include <optional>
 #include <scenario_simulator_exception/exception.hpp>
@@ -212,6 +212,37 @@ auto HdMapUtils::canonicalizeLaneletPose(
     }
   }
   return {canonicalized, std::nullopt};
+}
+
+auto HdMapUtils::countLaneChanges(
+  const traffic_simulator_msgs::msg::LaneletPose & from,
+  const traffic_simulator_msgs::msg::LaneletPose & to, bool allow_lane_change) const
+  -> std::optional<std::pair<int, int>>
+{
+  const auto route = getRoute(from.lanelet_id, to.lanelet_id, allow_lane_change);
+  if (route.empty()) {
+    return std::nullopt;
+  } else {
+    std::pair<int, int> lane_changes{0, 0};
+    for (std::size_t i = 1; i < route.size(); ++i) {
+      const auto & previous = route[i - 1];
+      const auto & current = route[i];
+
+      if (auto followings = getNextLaneletIds(previous);
+          std::find(followings.begin(), followings.end(), current) == followings.end()) {
+        traffic_simulator_msgs::msg::EntityType type;
+        type.type = traffic_simulator_msgs::msg::EntityType::VEHICLE;
+        if (auto lefts = getLeftLaneletIds(previous, type);
+            std::find(lefts.begin(), lefts.end(), current) != lefts.end()) {
+          lane_changes.first++;
+        } else if (auto rights = getRightLaneletIds(previous, type);
+                   std::find(rights.begin(), rights.end(), current) != rights.end()) {
+          lane_changes.second++;
+        }
+      }
+    }
+    return lane_changes;
+  }
 }
 
 auto HdMapUtils::getLaneletIds() const -> lanelet::Ids

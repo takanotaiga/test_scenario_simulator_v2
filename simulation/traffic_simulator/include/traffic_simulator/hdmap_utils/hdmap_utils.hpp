@@ -29,15 +29,15 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 
 #include <autoware_auto_mapping_msgs/msg/had_map_bin.hpp>
+#include <autoware_lanelet2_extension/utility/message_conversion.hpp>
+#include <autoware_lanelet2_extension/utility/query.hpp>
+#include <autoware_lanelet2_extension/utility/utilities.hpp>
 #include <boost/filesystem.hpp>
 #include <geographic_msgs/msg/geo_point.hpp>
 #include <geometry/spline/catmull_rom_spline.hpp>
 #include <geometry/spline/catmull_rom_spline_interface.hpp>
 #include <geometry/spline/hermite_curve.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
-#include <lanelet2_extension/utility/message_conversion.hpp>
-#include <lanelet2_extension/utility/query.hpp>
-#include <lanelet2_extension/utility/utilities.hpp>
 #include <map>
 #include <memory>
 #include <optional>
@@ -77,6 +77,11 @@ public:
   auto clipTrajectoryFromLaneletIds(
     const lanelet::Id, const double s, const lanelet::Ids &,
     const double forward_distance = 20) const -> std::vector<geometry_msgs::msg::Point>;
+
+  auto countLaneChanges(
+    const traffic_simulator_msgs::msg::LaneletPose & from,
+    const traffic_simulator_msgs::msg::LaneletPose & to, bool allow_lane_change) const
+    -> std::optional<std::pair<int, int>>;
 
   auto filterLaneletIds(const lanelet::Ids &, const char subtype[]) const -> lanelet::Ids;
 

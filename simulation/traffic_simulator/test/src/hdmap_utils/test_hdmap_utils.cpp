@@ -22,40 +22,7 @@
 #include <traffic_simulator/helper/helper.hpp>
 
 #include "../expect_eq_macros.hpp"
-
-auto makePoint(const double x, const double y, const double z = 0.0) -> geometry_msgs::msg::Point
-{
-  return geometry_msgs::build<geometry_msgs::msg::Point>().x(x).y(y).z(z);
-}
-
-auto makeBoundingBox(const double center_y = 0.0) -> traffic_simulator_msgs::msg::BoundingBox
-{
-  return traffic_simulator_msgs::build<traffic_simulator_msgs::msg::BoundingBox>()
-    .center(makePoint(1.0, center_y))
-    .dimensions(geometry_msgs::build<geometry_msgs::msg::Vector3>().x(4.0).y(2.0).z(1.5));
-}
-
-auto makePose(
-  geometry_msgs::msg::Point position,
-  geometry_msgs::msg::Quaternion orientation = geometry_msgs::msg::Quaternion())
-  -> geometry_msgs::msg::Pose
-{
-  return geometry_msgs::build<geometry_msgs::msg::Pose>().position(position).orientation(
-    orientation);
-}
-
-auto makeSmallBoundingBox(const double center_y = 0.0) -> traffic_simulator_msgs::msg::BoundingBox
-{
-  return traffic_simulator_msgs::build<traffic_simulator_msgs::msg::BoundingBox>()
-    .center(makePoint(0.0, center_y))
-    .dimensions(geometry_msgs::build<geometry_msgs::msg::Vector3>().x(1.0).y(1.0).z(1.0));
-}
-
-auto makeQuaternionFromYaw(const double yaw) -> geometry_msgs::msg::Quaternion
-{
-  return math::geometry::convertEulerAngleToQuaternion(
-    geometry_msgs::build<geometry_msgs::msg::Vector3>().x(0.0).y(0.0).z(yaw));
-}
+#include "../helper_functions.hpp"
 
 int main(int argc, char ** argv)
 {
@@ -478,6 +445,46 @@ TEST_F(HdMapUtilsTest_StandardMap, CanonicalizeAll)
   EXPECT_EQ(canonicalized_lanelet_poses.size(), static_cast<std::size_t>(1));
   EXPECT_EQ(canonicalized_lanelet_poses[0].lanelet_id, 34981);
   EXPECT_EQ(canonicalized_lanelet_poses[0].s, non_canonicalized_lanelet_s);
+}
+
+/**
+ * @note Testcase for countLaneChanges() function
+ */
+TEST_F(HdMapUtilsTest_FourTrackHighwayMap, CountLaneChangesAlongRoute)
+{
+  using traffic_simulator::helper::constructLaneletPose;
+  EXPECT_EQ(
+    hdmap_utils.countLaneChanges(
+      constructLaneletPose(3002176, 0), constructLaneletPose(3002175, 0), true),
+    std::make_pair(1, 0));
+  EXPECT_EQ(
+    hdmap_utils.countLaneChanges(
+      constructLaneletPose(3002176, 0), constructLaneletPose(3002182, 0), true),
+    std::make_pair(1, 0));
+  EXPECT_EQ(
+    hdmap_utils.countLaneChanges(
+      constructLaneletPose(3002176, 0), constructLaneletPose(199, 0), true),
+    std::make_pair(1, 0));
+  EXPECT_EQ(
+    hdmap_utils.countLaneChanges(
+      constructLaneletPose(3002176, 0), constructLaneletPose(3002176, 0), true),
+    std::make_pair(0, 0));
+  EXPECT_EQ(
+    hdmap_utils.countLaneChanges(
+      constructLaneletPose(3002176, 0), constructLaneletPose(200, 0), true),
+    std::make_pair(0, 0));
+  EXPECT_EQ(
+    hdmap_utils.countLaneChanges(
+      constructLaneletPose(3002176, 0), constructLaneletPose(201, 0), true),
+    std::make_pair(0, 1));
+  EXPECT_EQ(
+    hdmap_utils.countLaneChanges(
+      constructLaneletPose(3002176, 0), constructLaneletPose(202, 0), true),
+    std::make_pair(0, 2));
+  EXPECT_EQ(
+    hdmap_utils.countLaneChanges(
+      constructLaneletPose(3002176, 0), constructLaneletPose(206, 0), true),
+    std::make_pair(0, 2));
 }
 
 /**
