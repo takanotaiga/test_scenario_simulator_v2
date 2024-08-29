@@ -53,15 +53,6 @@ DistanceCondition::DistanceCondition(
     return node.get_parameter("consider_pose_by_road_slope").as_bool();
   }())
 {
-  std::set<RoutingAlgorithm::value_type> supported = {
-    RoutingAlgorithm::value_type::shortest};
-  if (supported.find(routing_algorithm) == supported.end()) {
-    std::stringstream what;
-    what << "Unsupported routing algorithm(DistanceCondition): " << boost::lexical_cast<std::string>(routing_algorithm);
-    what << ", rule: " << rule;
-    what << ", value: " << value;
-    throw common::Error(what.str());
-  }
 }
 
 auto DistanceCondition::description() const -> std::string
@@ -749,6 +740,15 @@ auto DistanceCondition::distance<
 
 auto DistanceCondition::evaluate() -> Object
 {
+  std::set<RoutingAlgorithm::value_type> supported = {
+      RoutingAlgorithm::value_type::shortest};
+  if (supported.find(routing_algorithm) == supported.end()) {
+    std::stringstream what;
+    what << "Unsupported routing algorithm(DistanceCondition): " << boost::lexical_cast<std::string>(routing_algorithm);
+    what << ", rule: " << rule;
+    what << ", value: " << value;
+    throw common::Error(what.str());
+  }
   results.clear();
 
   return asBoolean(triggering_entities.apply([&](auto && triggering_entity) {
