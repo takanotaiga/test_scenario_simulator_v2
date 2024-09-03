@@ -411,9 +411,10 @@ auto RelativeDistanceCondition::evaluate() -> Object
 {
   std::set<RoutingAlgorithm::value_type> supported = {
       RoutingAlgorithm::value_type::shortest};
-  if (supported.find(routing_algorithm) == supported.end()) {
+  if (supported.find(routing_algorithm) == supported.end() && coordinate_system == CoordinateSystem::lane) {
     std::stringstream what;
-    what << "Unsupported routing algorithm(RelativeDistanceCondition): " << boost::lexical_cast<std::string>(routing_algorithm);
+    what << "Detect!(RelativeDistanceCondition): " << boost::lexical_cast<std::string>(routing_algorithm);
+    what << ", type: " << relative_distance_type;
     what << ", rule: " << rule;
     what << ", value: " << value;
     throw common::Error(what.str());
