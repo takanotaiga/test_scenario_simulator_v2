@@ -23,12 +23,16 @@
 #include <geometry/quaternion/get_normal_vector.hpp>
 #include <geometry/quaternion/get_rotation_matrix.hpp>
 #include <geometry/vector3/hypot.hpp>
+#include <cstddef>
 #include <memory>
 #include <random>
+#include <asm-generic/errno.h>
+#include <quaternion_operation/quaternion_operation.h>
 #include <simple_sensor_simulator/exception.hpp>
 #include <simple_sensor_simulator/sensor_simulation/detection_sensor/detection_sensor.hpp>
 #include <simulation_interface/conversions.hpp>
 #include <string>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <vector>
 
 namespace simple_sensor_simulator
@@ -287,36 +291,6 @@ auto DetectionSensor<autoware_perception_msgs::msg::DetectedObjects>::update(
                 lidar_detected_entities.end());
     };
 
-    /*
-       NOTE: for Autoware developers
-
-       If you need to apply experimental noise to the DetectedObjects that the
-       simulator publishes, comment out the following function and implement
-       new one.
-    */
-    auto noise = [&](auto detected_entities, auto simulation_time) {
-      auto position_noise_distribution =
-        std::normal_distribution<>(0.0, configuration_.pos_noise_stddev());
-
-      for (auto && detected_entity : detected_entities) {
-        detected_entity.mutable_pose()->mutable_position()->set_x(
-          detected_entity.pose().position().x() + position_noise_distribution(random_engine_));
-        detected_entity.mutable_pose()->mutable_position()->set_y(
-          detected_entity.pose().position().y() + position_noise_distribution(random_engine_));
-      }
-
-      detected_entities.erase(
-        std::remove_if(
-          detected_entities.begin(), detected_entities.end(),
-          [this](auto &&) {
-            return std::uniform_real_distribution()(random_engine_) <
-                   configuration_.probability_of_lost();
-          }),
-        detected_entities.end());
-
-      return detected_entities;
-    };
-
     auto make_detected_objects = [&](const auto & detected_entities) {
       auto detected_objects = autoware_perception_msgs::msg::DetectedObjects();
       detected_objects.header.stamp = current_ros_time;
@@ -339,33 +313,142 @@ auto DetectionSensor<autoware_perception_msgs::msg::DetectedObjects>::update(
       return ground_truth_objects;
     };
 
-    static constexpr auto history_duration = 3.0;
+    /*
+       NOTE: for Autoware developers
 
-    auto detected_entities = std::vector<traffic_simulator_msgs::EntityStatus>();
+       If you need to apply experimental noise to the DetectedObjects that the
+       simulator publishes, comment out the following function and implement
+       new one.
+    */
+    // auto noise = [&](auto detected_entities, auto simulation_time) {
+    //   auto position_noise_distribution =
+    //     std::normal_distribution<>(0.0, configuration_.pos_noise_stddev());
 
+    //   for (auto && detected_entity : detected_entities) {
+    //     detected_entity.mutable_pose()->mutable_position()->set_x(
+    //       detected_entity.pose().position().x() + position_noise_distribution(random_engine_));
+    //     detected_entity.mutable_pose()->mutable_position()->set_y(
+    //       detected_entity.pose().position().y() + position_noise_distribution(random_engine_));
+    //   }
+
+    //   detected_entities.erase(
+    //     std::remove_if(
+    //       detected_entities.begin(), detected_entities.end(),
+    //       [this](auto &&) {
+    //         return std::uniform_real_distribution()(random_engine_) <
+    //                configuration_.probability_of_lost();
+    //       }),
+    //     detected_entities.end());
+
+    //   return detected_entities;
+    // };
+
+    auto noise = [&](auto detected_entities, auto simulation_time) {
+      // update noise status
+      std::vector<bool> is_masked(detected_entities.size(), false);
+
+      for (size_t i = 0; i < detected_entities.size(); ++i) {
+        auto & detected_entity = detected_entities[i];
+        if (entity_noise_status_map.find(detected_entity.name()) == entity_noise_status_map.end()){
+          entity_noise_status_map[detected_entity.name()] = EntityNoiseStatus(detected_entity.name(), simulation_time);
+        }
+        // entity's status
+        auto & noise_status = entity_noise_status_map[detected_entity.name()];
+        const double x = detected_entity.pose().position().x() - ego_entity_status->pose().position().x();
+        const double y = detected_entity.pose().position().y() - ego_entity_status->pose().position().y();
+        const double angle = std::atan2(y, x);
+        const double vel = std::hypot(detected_entity.action_status().twist().linear().x(),
+                                      detected_entity.action_status().twist().linear().y());
+        const double interval = simulation_time - noise_status.last_published_time;
+        // temp variables
+        double ellipse_dist, noise_std, noise_mean, noise_rate, phi;
+        bool noise_applied;
+
+        // update simulation time
+        noise_status.last_published_time = simulation_time;
+        // generate distance noise
+        ellipse_dist = calculateEllipseDistance(x, y, ellipse_normalized_x_radius_for_distance_mean);
+        noise_mean = findValue(ellipse_y_radius_values, distance_mean_values, ellipse_dist);
+        ellipse_dist = calculateEllipseDistance(x, y, ellipse_normalized_x_radius_for_distance_std);
+        noise_std = findValue(ellipse_y_radius_values, distance_std_values, ellipse_dist);
+        phi = std::exp(-(interval) / tau_for_distance);
+        const double distance_noise = generate_AR1_noise(
+          noise_status.last_distance_noise, noise_mean, noise_std, phi, random_engine_);
+        // apply distance noise
+        detected_entity.mutable_pose()->mutable_position()->set_x(
+          detected_entity.pose().position().x() + distance_noise * std::cos(angle));
+        detected_entity.mutable_pose()->mutable_position()->set_y(
+          detected_entity.pose().position().y() + distance_noise * std::sin(angle));
+        noise_status.last_distance_noise = distance_noise;
+        // generate yaw noise
+        ellipse_dist = calculateEllipseDistance(x, y, ellipse_normalized_x_radius_for_yaw_mean);
+        noise_mean = findValue(ellipse_y_radius_values, yaw_mean_values, ellipse_dist);
+        ellipse_dist = calculateEllipseDistance(x, y, ellipse_normalized_x_radius_for_yaw_std);
+        noise_std = findValue(ellipse_y_radius_values, yaw_std_values, ellipse_dist);
+        phi = std::exp(-(interval) / tau_for_yaw);
+        const double yaw_noise = generate_AR1_noise(
+          noise_status.last_yaw_noise, noise_mean, noise_std, phi, random_engine_);
+        // apply yaw noise
+        auto rotate_yaw = [&](auto & detected_entities, double yaw) {
+          tf2::Quaternion orientation_tf;
+          geometry_msgs::msg::Quaternion orientation;
+
+          simulation_interface::toMsg(detected_entities.pose().orientation(), orientation);
+          tf2::convert(orientation, orientation_tf);
+          orientation_tf *= tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw);
+          tf2::convert(orientation_tf, orientation);
+
+          detected_entities.mutable_pose()->mutable_orientation()->set_x(orientation.x);
+          detected_entities.mutable_pose()->mutable_orientation()->set_y(orientation.y);
+          detected_entities.mutable_pose()->mutable_orientation()->set_z(orientation.z);
+          detected_entities.mutable_pose()->mutable_orientation()->set_w(orientation.w);
+        };
+
+        rotate_yaw(detected_entity, yaw_noise);
+        noise_status.last_yaw_noise = yaw_noise;
+        // generate flip noise
+        phi = std::exp(-(interval) / tau_for_yaw_flip);
+        noise_rate = static_cast<double>(noise_status.is_last_yaw_flipped) * phi + (1-phi)*yaw_flip_rate_for_stop_objects;
+        noise_applied = (vel < yaw_flip_velocity_threshold) && (std::uniform_real_distribution<double>()(random_engine_) < noise_rate);
+        // apply flip noise
+        if (noise_applied){
+          rotate_yaw(detected_entity, M_PI);
+        }
+        noise_status.is_last_yaw_flipped = noise_applied;
+        // generate mask noise
+        phi = std::exp(-(interval) / tau_for_unmask_rate);
+        ellipse_dist = calculateEllipseDistance(x, y, ellipse_normalized_x_radius_for_unmask_rate);
+        noise_rate = 1 - findValue(ellipse_y_radius_values, unmask_rate_values, ellipse_dist);
+        noise_rate = static_cast<double>(noise_status.is_last_ground_truth_masked) * phi + (1-phi)*noise_rate;
+        noise_applied = std::uniform_real_distribution<double>()(random_engine_) < noise_rate;
+        is_masked[i] = noise_status.is_last_ground_truth_masked = noise_applied;
+      }
+
+      // apply mask noise
+      auto it = std::remove_if(detected_entities.begin(), detected_entities.end(),
+                              [&](const auto & detected_entity) {
+                                size_t index = &detected_entity - &detected_entities[0];
+                                return is_masked[index];
+                              });
+      detected_entities.erase(it, detected_entities.end());
+      return detected_entities;
+    };
+
+    auto visible_entities = std::vector<traffic_simulator_msgs::EntityStatus>();
     std::copy_if(
-      statuses.begin(), statuses.end(), std::back_inserter(detected_entities), is_in_range);
+      statuses.begin(), statuses.end(), std::back_inserter(visible_entities), is_in_range);
 
-    unpublished_detected_entities.emplace(detected_entities, current_simulation_time);
-
+    unpublished_detected_entities.emplace(visible_entities, current_simulation_time);
     if (
       current_simulation_time - unpublished_detected_entities.front().second >=
       configuration_.object_recognition_delay()) {
-      const auto modified_detected_entities =
+      const auto detected_entities =
         std::apply(noise, unpublished_detected_entities.front());
-      detected_objects_publisher->publish(make_detected_objects(modified_detected_entities));
-      published_detected_entities.emplace(
-        modified_detected_entities, unpublished_detected_entities.front().second);
-      if (
-        current_simulation_time - published_detected_entities.front().second >=
-        configuration_.object_recognition_delay() + history_duration) {
-        published_detected_entities.pop();
-      }
+      detected_objects_publisher->publish(make_detected_objects(detected_entities));
       unpublished_detected_entities.pop();
     }
 
-    unpublished_ground_truth_entities.emplace(detected_entities, current_simulation_time);
-
+    unpublished_ground_truth_entities.emplace(visible_entities, current_simulation_time);
     if (
       current_simulation_time - unpublished_ground_truth_entities.front().second >=
       configuration_.object_recognition_ground_truth_delay()) {
