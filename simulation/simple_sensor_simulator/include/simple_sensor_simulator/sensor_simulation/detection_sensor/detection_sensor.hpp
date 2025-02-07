@@ -124,26 +124,32 @@ class DetectionSensor : public DetectionSensorBase
   /*----temp config for perception noise----*/
   // old statistics from ellipse-based modeling
   const std::vector<double> ellipse_y_radius_values = {10, 20, 40, 60, 80, 120, 150, 180, 1000};
-  const double ellipse_normalized_x_radius_for_unmask_rate = 0.6;
+  // distance noise
   const double ellipse_normalized_x_radius_for_distance_mean = 1.8;
   const double ellipse_normalized_x_radius_for_distance_std = 1.8;
-  const double ellipse_normalized_x_radius_for_yaw_mean = 0.6;
-  const double ellipse_normalized_x_radius_for_yaw_std = 1.6;
-  const std::vector<double> unmask_rate_values = {0.92, 0.77, 0.74, 0.66, 0.57, 0.28, 0.09, 0.03, 0.00};
   const std::vector<double> distance_mean_values = {0.25, 0.27, 0.44, 0.67, 1.00,
                                                     3.00, 4.09, 3.40, 0.00};
   const std::vector<double> distance_std_values = {0.35, 0.54, 0.83, 1.14, 1.60,
                                                    3.56, 4.31, 3.61, 0.00};
+
+  // yaw noise
+  const double ellipse_normalized_x_radius_for_yaw_mean = 0.6;
+  const double ellipse_normalized_x_radius_for_yaw_std = 1.6;
   const std::vector<double> yaw_mean_values = {0.01, 0.01, 0.00, 0.03, 0.04,
                                                0.00, 0.01, 0.00, 0.00};
-  // yaw noise (handly tuned)
-  const std::vector<double> yaw_std_values = {0.05, 0.1, 0.15, 0.15, 0.2, 0.2, 0.3, 0.4, 0.5};
-  // yaw flip (handly tuned)
+  const std::vector<double> yaw_std_values = {0.05, 0.1, 0.15, 0.15, 0.2, 0.2, 0.3, 0.4, 0.5}; // (handly tuned)
+  
+  // random mask noise
+  const double ellipse_normalized_x_radius_for_unmask_rate = 0.6;
+  const std::vector<double> unmask_rate_values = {0.92, 0.77, 0.74, 0.66, 0.57, 0.28, 0.09, 0.03, 0.00};
+
+  // yaw flip noise (handly tuned)
   static constexpr auto yaw_flip_velocity_threshold = 0.1;
   const double yaw_flip_rate_for_stop_objects = 0.3;
 
-  // We use AR(1) model for distance and yaw noise, and a keep rate for true positive noise and yaw flip noise.
-  // To model noises' autocorrelation coefficients, we define the tau (handly tuned) as the following.
+  // We use AR(1) model to model noises' autocorrelation coefficients for all kinds of noises.
+  // We define the `tau` used for AR(1) from `delta_t`, which means the time interval when the autocorrelation coefficient becomes `correlation_for_delta_t` (0.5).
+  // the flowwing values are all handly tuned, need to be determined by statistics of real data.
   static constexpr double correlation_for_delta_t = 0.5; // autocorrelation coefficient=0.5 for an interval of delta_t.
 
   const double delta_t_for_distance = 0.5; //sec
